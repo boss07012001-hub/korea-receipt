@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>🇰🇷 韓國收據</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=DM+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #f5f3ee;
+  --surface: #ffffff;
+  --surface2: #f0ede6;
+  --border: #e0dbd0;
+  --accent: #c8562a;
+  --accent2: #e07045;
+  --text: #1a1814;
+  --text2: #8a8278;
+  --tag-bg: #fdf0eb;
+  --tag-color: #c8562a;
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'Noto Sans TC', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+.header {
+  background: var(--surface);
+  padding: 16px 20px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid var(--border);
+}
+
+.header-title { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+.header-sub { font-size: 11px; color: var(--text2); }
+
+.rate-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--tag-bg);
+  border: 1px solid rgba(200,86,42,0.2);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--accent);
+}
+.rate-pill input {
+  background: none; border: none;
+  color: var(--accent);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  width: 52px; text-align: right; outline: none;
+}
+
+.summary-bar {
+  background: var(--accent);
+  padding: 16px 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.sum-item { text-align: center; }
+.sum-item + .sum-item { border-left: 1px solid rgba(255,255,255,0.2); }
+.sum-label { font-size: 10px; color: rgba(255,255,255,0.7); letter-spacing: 1px; margin-bottom: 4px; }
+.sum-value { font-family: 'DM Mono', monospace; font-size: 15px; font-weight: 500; color: #fff; }
+.sum-sub { font-size: 10px; color: rgba(255,255,255,0.6); margin-top: 1px; }
+
+.upload-area { padding: 16px 16px 8px; }
+
+.upload-btn {
+  width: 100%;
+  background: var(--surface);
+  border: 2px dashed var(--border);
+  border-radius: 16px;
+  padding: 22px;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px; cursor: pointer; transition: all 0.2s;
+}
+.upload-btn.drag { border-color: var(--accent); background: var(--tag-bg); }
+.upload-btn-icon { font-size: 32px; }
+.upload-btn-text { font-size: 14px; font-weight: 600; }
+.upload-btn-sub { font-size: 12px; color: var(--text2); }
+#fileInput { display: none; }
+
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex; z-index: 50;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.nav-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; padding: 10px 0 8px;
+  cursor: pointer; color: var(--text2);
+  font-size: 10px; gap: 3px; transition: color 0.15s;
+}
+.nav-item.active { color: var(--accent); }
+.nav-icon { font-size: 20px; }
+
+.page { display: none; padding-bottom: 80px; }
+.page.active { display: block; }
+
+.section-title {
+  padding: 16px 20px 8px;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 2px; text-transform: uppercase; color: var(--text2);
+}
+
+.receipt-card {
+  background: var(--surface);
+  margin: 0 16px 10px;
+  border-radius: 16px; padding: 16px;
+  box-shadow: var(--shadow); cursor: pointer;
+  transition: transform 0.15s; position: relative; overflow: hidden;
+}
+.receipt-card:active { transform: scale(0.98); }
+.receipt-card::before {
+  content: ''; position: absolute;
+  left: 0; top: 0; bottom: 0; width: 4px;
+  background: var(--accent); border-radius: 4px 0 0 4px;
+}
+
+.rc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.rc-store { font-size: 16px; font-weight: 700; }
+.rc-amount-krw { font-family: 'DM Mono', monospace; font-size: 16px; font-weight: 600; color: var(--accent); }
+.rc-amount-twd { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text2); text-align: right; }
+.rc-meta { display: flex; gap: 12px; font-size: 12px; color: var(--text2); }
+.rc-items { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 6px; }
+.item-tag { background: var(--tag-bg); color: var(--tag-color); font-size: 11px; padding: 3px 10px; border-radius: 20px; }
+
+.delete-btn {
+  position: absolute; top: 12px; right: 12px;
+  background: rgba(0,0,0,0.06); border: none;
+  width: 28px; height: 28px; border-radius: 50%;
+  font-size: 12px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text2);
+}
+
+.back-btn {
+  display: flex; align-items: center; gap: 6px;
+  background: none; border: none;
+  color: var(--accent); font-size: 15px;
+  font-family: 'Noto Sans TC', sans-serif;
+  padding: 16px 20px 8px; cursor: pointer;
+}
+
+.detail-header { background: var(--surface); padding: 20px; margin-bottom: 12px; }
+.detail-store { font-size: 22px; font-weight: 900; margin-bottom: 6px; letter-spacing: -0.5px; }
+.detail-meta { font-size: 13px; color: var(--text2); display: flex; gap: 12px; flex-wrap: wrap; }
+
+.detail-total-box {
+  background: var(--accent);
+  margin: 0 16px 12px; border-radius: 16px;
+  padding: 16px 20px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.dtb-label { font-size: 11px; color: rgba(255,255,255,0.7); margin-bottom: 4px; }
+.dtb-krw { font-family: 'DM Mono', monospace; font-size: 24px; font-weight: 600; color: #fff; }
+.dtb-twd { font-family: 'DM Mono', monospace; font-size: 14px; color: rgba(255,255,255,0.8); margin-top: 2px; }
+.dtb-pay { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 6px; }
+
+.items-card { background: var(--surface); margin: 0 16px 12px; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
+.items-card-title { padding: 14px 16px 10px; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text2); border-bottom: 1px solid var(--border); }
+
+.item-row { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); gap: 10px; }
+.item-row:last-child { border-bottom: none; }
+.item-qty { background: var(--surface2); border-radius: 8px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+.item-name { flex: 1; }
+.item-name-zh { font-size: 14px; font-weight: 500; }
+.item-name-kr { font-size: 11px; color: var(--text2); margin-top: 1px; }
+.item-price { text-align: right; flex-shrink: 0; }
+.item-price-krw { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; }
+.item-price-twd { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text2); }
+.item-free { font-size: 11px; color: var(--text2); background: var(--surface2); padding: 2px 8px; border-radius: 10px; }
+.tax-row { display: flex; justify-content: space-between; padding: 10px 16px; font-size: 13px; color: var(--text2); border-top: 1px solid var(--border); }
+
+.stats-section { background: var(--surface); margin: 0 16px 12px; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
+.stats-section-title { padding: 14px 16px 10px; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text2); border-bottom: 1px solid var(--border); }
+
+.stat-row { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); gap: 12px; }
+.stat-row:last-child { border-bottom: none; }
+.stat-bar-wrap { flex: 1; }
+.stat-store-name { font-size: 14px; font-weight: 500; margin-bottom: 5px; }
+.stat-bar { height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+.stat-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; }
+.stat-amount { text-align: right; flex-shrink: 0; }
+.stat-krw { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 600; color: var(--accent); }
+.stat-twd { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text2); }
+.stat-count { font-size: 10px; color: var(--text2); margin-top: 1px; }
+
+.overview-grid { display: grid; grid-template-columns: 1fr 1fr; }
+.ov-cell { padding: 16px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.ov-cell:nth-child(2n) { border-right: none; }
+.ov-cell:nth-last-child(-n+2) { border-bottom: none; }
+.ov-label { font-size: 10px; color: var(--text2); letter-spacing: 1px; margin-bottom: 6px; }
+.ov-value { font-family: 'DM Mono', monospace; font-size: 16px; font-weight: 600; color: var(--accent); }
+.ov-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+.all-item-row { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: center; }
+.all-item-row:last-child { border-bottom: none; }
+.all-item-store { font-size: 10px; color: var(--text2); margin-bottom: 2px; }
+.all-item-name { font-size: 14px; font-weight: 500; }
+.all-item-kr { font-size: 11px; color: var(--text2); margin-top: 1px; }
+.all-item-price { text-align: right; flex-shrink: 0; }
+
+.export-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: calc(100% - 32px); margin: 0 16px 12px;
+  background: var(--accent); color: #fff; border: none;
+  border-radius: 12px; padding: 14px;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+.export-btn:active { opacity: 0.8; }
+
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; color: var(--text2); text-align: center; gap: 10px; }
+.empty-icon { font-size: 48px; opacity: 0.4; }
+.empty-text { font-size: 14px; line-height: 1.6; }
+
+.loading-overlay {
+  position: fixed; inset: 0;
+  background: rgba(245,243,238,0.92);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 200; gap: 16px;
+  backdrop-filter: blur(8px);
+}
+.spinner { width: 44px; height: 44px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 15px; color: var(--text2); }
+.loading-store { font-size: 13px; color: var(--accent); font-weight: 600; }
+
+.toast {
+  position: fixed; bottom: 90px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--text); color: #fff;
+  padding: 10px 20px; border-radius: 20px;
+  font-size: 13px; opacity: 0;
+  transition: all 0.3s; z-index: 300; white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">🇰🇷 韓國收據統計</div>
+    <div class="header-sub">AI 自動辨識 · 即時換算</div>
+  </div>
+  <div class="rate-pill">
+    <span>₩1=</span>
+    <input type="number" id="rateInput" value="0.0228" step="0.0001">
+    <span>NT$</span>
+  </div>
+</div>
+
+<div class="summary-bar">
+  <div class="sum-item">
+    <div class="sum-label">收據數</div>
+    <div class="sum-value" id="sumCount">0</div>
+    <div class="sum-sub">張</div>
+  </div>
+  <div class="sum-item">
+    <div class="sum-label">總韓元</div>
+    <div class="sum-value" id="sumKRW">₩0</div>
+    <div class="sum-sub"> </div>
+  </div>
+  <div class="sum-item">
+    <div class="sum-label">總台幣</div>
+    <div class="sum-value" id="sumTWD">NT$0</div>
+    <div class="sum-sub"> </div>
+  </div>
+</div>
+
+<!-- PAGE: 收據列表 -->
+<div class="page active" id="pageList">
+  <div class="upload-area">
+    <div class="upload-btn" id="uploadZone">
+      <div class="upload-btn-icon">📷</div>
+      <div class="upload-btn-text">上傳收據照片</div>
+      <div class="upload-btn-sub">AI 自動辨識韓文 · 支援 JPG / PNG</div>
+      <input type="file" id="fileInput" accept="image/*" multiple>
+    </div>
+  </div>
+  <div class="section-title">收據列表</div>
+  <div id="receiptList"></div>
+</div>
+
+<!-- PAGE: 收據明細 -->
+<div class="page" id="pageDetail">
+  <button class="back-btn" onclick="goBack()">← 返回列表</button>
+  <div id="detailContent"></div>
+</div>
+
+<!-- PAGE: 統計 -->
+<div class="page" id="pageStats">
+  <div class="section-title" style="padding-top:16px">消費統計</div>
+  <div id="statsContent"></div>
+</div>
+
+<!-- PAGE: 全部明細 -->
+<div class="page" id="pageAll">
+  <div class="section-title" style="padding-top:16px">全部品項</div>
+  <button class="export-btn" onclick="exportCSV()">⬇ 匯出 CSV</button>
+  <div class="stats-section"><div id="allContent"></div></div>
+</div>
+
+<div class="bottom-nav">
+  <div class="nav-item active" data-page="pageList" onclick="switchPage('pageList',this)">
+    <span class="nav-icon">🧾</span><span>收據</span>
+  </div>
+  <div class="nav-item" data-page="pageStats" onclick="switchPage('pageStats',this)">
+    <span class="nav-icon">📊</span><span>統計</span>
+  </div>
+  <div class="nav-item" data-page="pageAll" onclick="switchPage('pageAll',this)">
+    <span class="nav-icon">📋</span><span>明細</span>
+  </div>
+</div>
+
+<div class="loading-overlay" id="loadingOverlay" style="display:none">
+  <div class="spinner"></div>
+  <div class="loading-text">AI 辨識中，請稍候…</div>
+  <div class="loading-store" id="loadingStore"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let receipts = JSON.parse(localStorage.getItem('kr_receipts') || '[]');
+let rate = parseFloat(localStorage.getItem('kr_rate') || '0.0228');
+
+document.getElementById('rateInput').value = rate;
+
+document.getElementById('rateInput').addEventListener('change', e => {
+  rate = parseFloat(e.target.value) || 0.0228;
+  localStorage.setItem('kr_rate', rate);
+  updateAll();
+});
+
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag'));
+uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('drag'); handleFiles(e.dataTransfer.files); });
+fileInput.addEventListener('change', e => { handleFiles(e.target.files); fileInput.value=''; });
+
+async function handleFiles(files) {
+  for (const f of files) await processReceipt(f);
+}
+
+async function processReceipt(file) {
+  document.getElementById('loadingStore').textContent = file.name;
+  document.getElementById('loadingOverlay').style.display = 'flex';
+  try {
+    const b64 = await toBase64(file);
+    const data = await callClaude(b64);
+    receipts.unshift({ id: Date.now()+Math.random(), filename: file.name, ...data });
+    save(); updateAll();
+    showToast('✅ 辨識完成：' + (data.store || data.storeOriginal));
+  } catch(e) {
+    showToast('❌ 辨識失敗，請重試');
+    console.error(e);
+  }
+  document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+function toBase64(file) {
+  return new Promise((res,rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+async function callClaude(base64) {
+  const prompt = `你是收據辨識助手。請仔細辨識這張收據圖片，提取所有資訊。
+請只回傳一個JSON物件，不要加任何說明文字、不要加markdown符號，直接從{開始到}結束。
+
+格式範例：
+{"store":"店家中文名稱","storeOriginal":"店家韓文名稱","address":"地址","date":"2026-04-18","time":"12:46","orderNo":"420","items":[{"name":"品項中文","nameOriginal":"품항韓文","qty":1,"price":6200}],"subtotal":19363,"tax":1937,"total":21300,"paymentMethod":"信用卡"}
+
+注意：
+- 所有金額為韓元整數
+- date格式必須是YYYY-MM-DD
+- 只輸出JSON，第一個字元必須是{`;
+
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1500,
+      messages: [{ role: 'user', content: [
+        { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } },
+        { type: 'text', text: prompt }
+      ]}]
+    })
+  });
+
+  if (!resp.ok) {
+    const err = await resp.text();
+    throw new Error('API錯誤: ' + resp.status + ' ' + err);
+  }
+
+  const d = await resp.json();
+  console.log('API回傳:', JSON.stringify(d));
+
+  const text = d.content?.find(b => b.type==='text')?.text || '';
+  console.log('文字內容:', text);
+
+  // 嘗試多種方式解析JSON
+  let jsonStr = text.trim();
+
+  // 移除markdown
+  jsonStr = jsonStr.replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
+
+  // 找到第一個{到最後一個}
+  const start = jsonStr.indexOf('{');
+  const end = jsonStr.lastIndexOf('}');
+  if (start !== -1 && end !== -1) {
+    jsonStr = jsonStr.substring(start, end+1);
+  }
+
+  try {
+    return JSON.parse(jsonStr);
+  } catch(e) {
+    console.error('JSON解析失敗:', jsonStr);
+    throw new Error('解析失敗，請重試');
+  }
+}
+
+function updateAll() {
+  renderSummary(); renderList(); renderStats(); renderAll();
+}
+
+function renderSummary() {
+  const total = receipts.reduce((s,r) => s+(r.total||0), 0);
+  document.getElementById('sumCount').textContent = receipts.length;
+  document.getElementById('sumKRW').textContent = '₩'+total.toLocaleString();
+  document.getElementById('sumTWD').textContent = 'NT$'+Math.round(total*rate).toLocaleString();
+}
+
+function renderList() {
+  const el = document.getElementById('receiptList');
+  if (!receipts.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">🧾</div><div class="empty-text">尚未上傳收據<br>點擊上方按鈕拍照或選擇圖片</div></div>`;
+    return;
+  }
+  el.innerHTML = receipts.map(r => `
+    <div class="receipt-card" onclick="showDetail('${r.id}')">
+      <button class="delete-btn" onclick="deleteReceipt(event,'${r.id}')">✕</button>
+      <div class="rc-top">
+        <div class="rc-store">${r.store || r.storeOriginal || '未知店家'}</div>
+        <div>
+          <div class="rc-amount-krw">₩${(r.total||0).toLocaleString()}</div>
+          <div class="rc-amount-twd">≈ NT$${Math.round((r.total||0)*rate).toLocaleString()}</div>
+        </div>
+      </div>
+      <div class="rc-meta">
+        <span>📅 ${r.date||'-'}</span>
+        <span>🕐 ${r.time||'-'}</span>
+        ${r.orderNo ? `<span>🔢 ${r.orderNo}</span>` : ''}
+      </div>
+      <div class="rc-items">
+        ${(r.items||[]).filter(i=>i.price>0).slice(0,4).map(i=>`<span class="item-tag">${i.name}</span>`).join('')}
+        ${(r.items||[]).filter(i=>i.price>0).length > 4 ? `<span class="item-tag">+${(r.items||[]).filter(i=>i.price>0).length-4}項</span>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function showDetail(id) {
+  const r = receipts.find(x => String(x.id)===String(id));
+  if (!r) return;
+  const twd = Math.round((r.total||0)*rate);
+  document.getElementById('detailContent').innerHTML = `
+    <div class="detail-header">
+      <div class="detail-store">${r.store || r.storeOriginal}</div>
+      <div class="detail-meta">
+        <span>📅 ${r.date||'-'}</span>
+        <span>🕐 ${r.time||'-'}</span>
+        ${r.orderNo ? `<span>🔢 ${r.orderNo}</span>` : ''}
+      </div>
+      ${r.address ? `<div style="font-size:12px;color:var(--text2);margin-top:6px">📍 ${r.address}</div>` : ''}
+    </div>
+    <div class="detail-total-box">
+      <div>
+        <div class="dtb-label">總金額</div>
+        <div class="dtb-krw">₩${(r.total||0).toLocaleString()}</div>
+        <div class="dtb-twd">≈ NT$${twd.toLocaleString()}</div>
+        ${r.paymentMethod ? `<div class="dtb-pay">${r.paymentMethod}</div>` : ''}
+      </div>
+      <div style="font-size:48px;opacity:0.25">🧾</div>
+    </div>
+    <div class="items-card">
+      <div class="items-card-title">品項明細</div>
+      ${(r.items||[]).map(item => `
+        <div class="item-row">
+          <div class="item-qty">${item.qty}</div>
+          <div class="item-name">
+            <div class="item-name-zh">${item.name}</div>
+            ${item.nameOriginal ? `<div class="item-name-kr">${item.nameOriginal}</div>` : ''}
+          </div>
+          <div class="item-price">
+            ${item.price > 0
+              ? `<div class="item-price-krw">₩${item.price.toLocaleString()}</div><div class="item-price-twd">NT$${Math.round(item.price*rate)}</div>`
+              : `<span class="item-free">免費</span>`}
+          </div>
+        </div>
+      `).join('')}
+      ${r.subtotal ? `<div class="tax-row"><span>未稅金額</span><span style="font-family:'DM Mono',monospace">₩${(r.subtotal||0).toLocaleString()}</span></div>` : ''}
+      ${r.tax ? `<div class="tax-row"><span>加值稅 (10%)</span><span style="font-family:'DM Mono',monospace">₩${(r.tax||0).toLocaleString()}</span></div>` : ''}
+    </div>
+  `;
+  switchPage('pageDetail', null);
+}
+
+function goBack() {
+  switchPage('pageList', document.querySelector('[data-page="pageList"]'));
+}
+
+function renderStats() {
+  const el = document.getElementById('statsContent');
+  if (!receipts.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">上傳收據後顯示統計</div></div>`;
+    return;
+  }
+  const grandKRW = receipts.reduce((s,r) => s+(r.total||0), 0);
+  const storeMap = {};
+  receipts.forEach(r => {
+    const n = r.store || r.storeOriginal || '未知';
+    if (!storeMap[n]) storeMap[n] = {count:0,total:0};
+    storeMap[n].count++; storeMap[n].total += r.total||0;
+  });
+  const stores = Object.entries(storeMap).sort((a,b)=>b[1].total-a[1].total);
+  const maxStore = stores[0]?.[1].total || 1;
+  const dateMap = {};
+  receipts.forEach(r => {
+    if (r.date) { if (!dateMap[r.date]) dateMap[r.date]=0; dateMap[r.date]+=r.total||0; }
+  });
+  const dates = Object.entries(dateMap).sort((a,b)=>a[0].localeCompare(b[0]));
+
+  el.innerHTML = `
+    <div class="stats-section">
+      <div class="stats-section-title">各店消費排行</div>
+      ${stores.map(([name,d]) => `
+        <div class="stat-row">
+          <div class="stat-bar-wrap">
+            <div class="stat-store-name">${name}</div>
+            <div class="stat-bar"><div class="stat-bar-fill" style="width:${d.total/maxStore*100}%"></div></div>
+          </div>
+          <div class="stat-amount">
+            <div class="stat-krw">₩${d.total.toLocaleString()}</div>
+            <div class="stat-twd">NT$${Math.round(d.total*rate).toLocaleString()}</div>
+            <div class="stat-count">${d.count}次</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="stats-section">
+      <div class="stats-section-title">每日消費</div>
+      ${dates.map(([date,total]) => `
+        <div class="stat-row">
+          <div class="stat-bar-wrap"><div class="stat-store-name">${date}</div></div>
+          <div class="stat-amount">
+            <div class="stat-krw">₩${total.toLocaleString()}</div>
+            <div class="stat-twd">NT$${Math.round(total*rate).toLocaleString()}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="stats-section">
+      <div class="stats-section-title">旅遊總覽</div>
+      <div class="overview-grid">
+        <div class="ov-cell"><div class="ov-label">收據總數</div><div class="ov-value">${receipts.length}</div><div class="ov-sub">張</div></div>
+        <div class="ov-cell"><div class="ov-label">店家數</div><div class="ov-value">${stores.length}</div><div class="ov-sub">家</div></div>
+        <div class="ov-cell"><div class="ov-label">總消費韓元</div><div class="ov-value" style="font-size:13px">₩${grandKRW.toLocaleString()}</div></div>
+        <div class="ov-cell"><div class="ov-label">總消費台幣</div><div class="ov-value" style="font-size:13px">NT$${Math.round(grandKRW*rate).toLocaleString()}</div></div>
+        <div class="ov-cell" style="grid-column:1/-1"><div class="ov-label">平均每筆</div><div class="ov-value">NT$${Math.round(grandKRW*rate/receipts.length).toLocaleString()}</div></div>
+      </div>
+    </div>
+  `;
+}
+
+function renderAll() {
+  const el = document.getElementById('allContent');
+  if (!receipts.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">尚無資料</div></div>`;
+    return;
+  }
+  let rows = '';
+  receipts.forEach(r => {
+    (r.items||[]).filter(i=>i.price>0).forEach(item => {
+      rows += `<div class="all-item-row">
+        <div style="flex:1">
+          <div class="all-item-store">${r.store||r.storeOriginal} · ${r.date||''}</div>
+          <div class="all-item-name">${item.name}</div>
+          ${item.nameOriginal ? `<div class="all-item-kr">${item.nameOriginal}</div>` : ''}
+        </div>
+        <div class="all-item-price">
+          <div class="stat-krw">₩${item.price.toLocaleString()}</div>
+          <div class="stat-twd">NT$${Math.round(item.price*rate)}</div>
+        </div>
+      </div>`;
+    });
+  });
+  el.innerHTML = rows;
+}
+
+function exportCSV() {
+  let csv = '\uFEFF日期,時間,店家,品項,品項韓文,數量,韓元,台幣\n';
+  receipts.forEach(r => {
+    (r.items||[]).forEach(item => {
+      csv += [r.date,r.time,r.store||r.storeOriginal,item.name,item.nameOriginal||'',item.qty,item.price,Math.round(item.price*rate)].join(',') + '\n';
+    });
+  });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download = '韓國收據統計.csv';
+  a.click();
+  showToast('✅ CSV 已下載');
+}
+
+function deleteReceipt(e, id) {
+  e.stopPropagation();
+  if (!confirm('確定刪除這張收據？')) return;
+  receipts = receipts.filter(r => String(r.id) !== String(id));
+  save(); updateAll();
+  showToast('🗑 已刪除');
+}
+
+function switchPage(pageId, navEl) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+  if (navEl) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    navEl.classList.add('active');
+  }
+  window.scrollTo(0,0);
+}
+
+function save() {
+  try { localStorage.setItem('kr_receipts', JSON.stringify(receipts)); } catch(e) {}
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+updateAll();
+</script>
+</body>
+</html>
