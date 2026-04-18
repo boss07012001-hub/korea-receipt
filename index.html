@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -346,6 +347,7 @@ body {
 <script>
 let receipts = JSON.parse(localStorage.getItem('kr_receipts') || '[]');
 let rate = parseFloat(localStorage.getItem('kr_rate') || '0.0228');
+// 強制更新匯率顯示
 
 document.getElementById('rateInput').value = rate;
 
@@ -377,7 +379,7 @@ async function processReceipt(file) {
     save(); updateAll();
     showToast('✅ 辨識完成：' + (data.store || data.storeOriginal));
   } catch(e) {
-    showToast('❌ 辨識失敗，請重試');
+    showToast('❌ ' + (e.message || '辨識失敗，請重試'));
     console.error(e);
   }
   document.getElementById('loadingOverlay').style.display = 'none';
@@ -406,7 +408,7 @@ async function callClaude(base64) {
 - 只輸出JSON，第一個字元必須是{`;
 
   const resp = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
