@@ -393,29 +393,34 @@ function toBase64(file) {
 }
 
 async function callClaude(base64) {
+  const GEMINI_KEY = 'AIzaSyCkAeYHqHtxGl-MtwNW94ShK73PLP9Jgco';
   const prompt = `你是收據辨識助手。請仔細辨識這張收據圖片，提取所有資訊。
 請只回傳一個JSON物件，不要加任何說明文字、不要加markdown符號，直接從{開始到}結束。
 
 格式範例：
-{"store":"店家中文名稱","storeOriginal":"店家韓文名稱","address":"地址","date":"2026-04-18","time":"12:46","orderNo":"420","items":[{"name":"品項中文","nameOriginal":"품항韓文","qty":1,"price":6200}],"subtotal":19363,"tax":1937,"total":21300,"paymentMethod":"信用卡"}
+{"store":"店家中文名稱","storeOriginal":"店家韓文名稱","address":"地址","date":"2026-04-18","time":"12:46","orderNo":"420","items":[{"name":"品項中文","nameOriginal":"품목韓文","qty":1,"price":6200}],"subtotal":19363,"tax":1937,"total":21300,"paymentMethod":"信用卡"}
 
 注意：
 - 所有金額為韓元整數
 - date格式必須是YYYY-MM-DD
 - 只輸出JSON，第一個字元必須是{`;
 
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1500,
-      messages: [{ role: 'user', content: [
-        { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } },
-        { type: 'text', text: prompt }
-      ]}]
-    })
-  });
+  const resp = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { inline_data: { mime_type: 'image/jpeg', data: base64 } },
+            { text: prompt }
+          ]
+        }],
+        generationConfig: { temperature: 0.1, maxOutputTokens: 1500 }
+      })
+    }
+  );
 
   if (!resp.ok) {
     const err = await resp.text();
@@ -423,18 +428,14 @@ async function callClaude(base64) {
   }
 
   const d = await resp.json();
-  console.log('API回傳:', JSON.stringify(d));
+  console.log('Gemini回傳:', JSON.stringify(d));
 
-  const text = d.content?.find(b => b.type==='text')?.text || '';
+  const text = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
   console.log('文字內容:', text);
 
-  // 嘗試多種方式解析JSON
   let jsonStr = text.trim();
-
-  // 移除markdown
   jsonStr = jsonStr.replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
 
-  // 找到第一個{到最後一個}
   const start = jsonStr.indexOf('{');
   const end = jsonStr.lastIndexOf('}');
   if (start !== -1 && end !== -1) {
